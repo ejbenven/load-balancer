@@ -44,5 +44,24 @@ class LoadBalancerTest(unittest.TestCase):
             lb.add_provider(provider)
 
 
+    def test_round_robin_get(self):
+        """
+        Verify that the providers are invoked in the correct order
+        and queued in the correct fashion with the round robin algorithm
+        """
+        N = 10
+        lb = loadBalancer.LoadBalancer(N, False)
+        for _ in range(N):
+            provider = loadBalancer.Provider()
+            lb.add_provider(provider)
+
+        cpy = lb.free_providers.copy()
+        ids = lb.free_providers.copy()
+        for _ in range(N):
+            self.assertEqual(ids.pop(), lb.get())
+
+        self.assertTrue(cpy == lb.free_providers)
+
+
 if __name__ == '__main__':
     unittest.main()
