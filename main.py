@@ -1,5 +1,5 @@
 from loadBalancer import LoadBalancer, Provider
-
+from time import sleep
 
 if __name__ == "__main__":
     N = 10
@@ -9,5 +9,7 @@ if __name__ == "__main__":
         lb.add_provider(provider)
 
 
-    for _ in range(10):
+    for i in range(50):
         print(lb.get())
+        if i % 10 == 0:
+            sleep(1)

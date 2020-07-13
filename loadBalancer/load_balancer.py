@@ -1,12 +1,14 @@
 import threading
 from random import choice
 from collections import deque
+from time import sleep
 
 class LoadBalancer:
-    def __init__(self, max_providers=10, random=True):
+    def __init__(self, max_providers=10, random=True, beat=2):
         """
         max_providers: Maximum number of providers that can be registered
         random: If true, invokes providers randomly. Otherwise use round robin invocation
+        beat: Time between each invocation of the heart beat checker
         """
         self.max_providers = max_providers
         self.providers = {}
@@ -15,6 +17,10 @@ class LoadBalancer:
         self.random = random
         self._lock = threading.Lock()
         self.blacklist = set()
+        self._beat = beat
+
+        heartbeat_thread = threading.Thread(target=self._heart_beat, daemon=True)
+        heartbeat_thread.start()
 
     def add_provider(self, provider):
         """
@@ -37,6 +43,14 @@ class LoadBalancer:
             if provider_id in self.free_providers:
                 self.free_providers.remove(provider_id)
             self.blacklist.add(provider_id)
+
+    def _heart_beat(self):
+        while True:
+            for provider_id, provider in self.providers.items():
+                if not provider.check():
+                    self.blacklist_provider(provider_id)
+
+            sleep(self._beat)
 
     def _get_provider_random(self):
         """

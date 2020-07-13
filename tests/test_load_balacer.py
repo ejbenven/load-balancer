@@ -1,5 +1,6 @@
 import unittest
 from .context import loadBalancer
+from time import sleep
 
 class LoadBalancerTest(unittest.TestCase):
 
@@ -97,6 +98,24 @@ class LoadBalancerTest(unittest.TestCase):
         #Both providers should now be available
         self.assertEqual(lb.get(), black.get())
         self.assertEqual(lb.get(), white.get())
+
+
+    def test_heartbeat(self):
+        N = 10
+        #Round robin invocation to be able to predict which provider will be called
+        lb = loadBalancer.LoadBalancer(N, False, 2)
+        white = loadBalancer.Provider()
+        black = loadBalancer.Provider(False)
+            
+        lb.add_provider(white)
+        lb.add_provider(black)
+
+        sleep(4)
+
+        for _ in range(2):
+            self.assertEqual(lb.get(), white.get())
+
+
 
 if __name__ == '__main__':
     unittest.main()
