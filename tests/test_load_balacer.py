@@ -66,6 +66,37 @@ class LoadBalancerTest(unittest.TestCase):
 
         self.assertTrue(cpy == lb.free_providers)
 
+    def test_blacklist(self):
+        """
+        Verify that the blacklist and whitelist process affects the
+        free provider list correctly
+        """
+        N = 10
+        #Round robin invocation to be able to predict which provider will be called
+        lb = loadBalancer.LoadBalancer(N, False)
+        white = loadBalancer.Provider()
+        black = loadBalancer.Provider()
+            
+        lb.add_provider(white)
+        lb.add_provider(black)
+
+        lb.blacklist_provider(black.get())
+
+        #Check that we only use the white provider
+        for _ in range(2):
+            self.assertEqual(lb.get(), white.get())
+
+        lb.blacklist_provider(white.get())
+
+        #No providers should be available
+        self.assertEqual(lb.get(), "All providers are busy")
+
+        lb.whitelist_provider(white.get())
+        lb.whitelist_provider(black.get())
+
+        #Both providers should now be available
+        self.assertEqual(lb.get(), black.get())
+        self.assertEqual(lb.get(), white.get())
 
 if __name__ == '__main__':
     unittest.main()

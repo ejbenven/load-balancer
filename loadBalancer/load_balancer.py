@@ -14,6 +14,7 @@ class LoadBalancer:
         self.free_providers = [] if random else deque([])
         self.random = random
         self._lock = threading.Lock()
+        self.blacklist = set()
 
     def add_provider(self, provider):
         """
@@ -24,6 +25,18 @@ class LoadBalancer:
         else:
             self.providers[provider.get()] = provider
             self.free_providers.append(provider.get())
+
+    def whitelist_provider(self, provider_id):
+        with self._lock:
+            if provider_id in self.blacklist:
+                self.blacklist.remove(provider_id)
+                self.free_providers.append(provider_id)
+
+    def blacklist_provider(self, provider_id):
+        with self._lock:
+            if provider_id in self.free_providers:
+                self.free_providers.remove(provider_id)
+            self.blacklist.add(provider_id)
 
     def _get_provider_random(self):
         """
@@ -43,7 +56,8 @@ class LoadBalancer:
         provider_id = self.free_providers.pop()
 
         return provider_id, self.providers[provider_id]
-
+    
+    
     def get(self):
         """
         Send the GET request to a provider
@@ -60,10 +74,11 @@ class LoadBalancer:
 
         val = provider.get()
         with self._lock:
-            #The provider is now available again
-            if self.random:
-                self.free_providers.append(provider_id)
-            else:
-                self.free_providers.appendleft(provider_id)
+            if provider_id not in self.blacklist:
+                #The provider is now available again
+                if self.random:
+                    self.free_providers.append(provider_id)
+                else:
+                    self.free_providers.appendleft(provider_id)
 
         return val

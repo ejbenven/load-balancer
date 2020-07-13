@@ -9,4 +9,5 @@ if __name__ == "__main__":
         lb.add_provider(provider)
 
 
-    print(lb.get())
+    for _ in range(10):
+        print(lb.get())
