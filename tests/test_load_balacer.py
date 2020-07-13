@@ -18,6 +18,10 @@ class LoadBalancerTest(unittest.TestCase):
             lb.add_provider(provider)
 
 
+    def test_no_free_providers(self):
+        lb = loadBalancer.LoadBalancer()
+        self.assertEqual(lb.get(), "All providers are busy")
+
 
     def test_get_provider_random(self):
         """

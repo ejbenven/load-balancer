@@ -51,6 +51,8 @@ class LoadBalancer:
         provider = None
         provider_id = None
         with self._lock:
+            if len(self.free_providers) == 0:
+                return "All providers are busy"
             if(self.random):
                 provider_id, provider = self._get_provider_random()
             else:
