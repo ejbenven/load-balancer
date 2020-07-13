@@ -5,11 +5,12 @@ from time import sleep
 
 
 class LoadBalancer:
-    def __init__(self, max_providers=10, random=True, beat=2):
+    def __init__(self, max_providers=10, random=True, beat=2, max_parallel_req=5):
         """
         max_providers: Maximum number of providers that can be registered
         random: If true, invokes providers randomly. Otherwise use round robin invocation
         beat: Time between each invocation of the heart beat checker
+        max_parallel_req: Maximum number of parallel GET requests executed concurrently
         """
         self.max_providers = max_providers
         self.providers = {}
@@ -20,6 +21,7 @@ class LoadBalancer:
         self.blacklist = set()
         self._beat = beat
         self._alive_count = {}
+        self.req_sema = threading.BoundedSemaphore(value=max_parallel_req)
 
         heartbeat_thread = threading.Thread(target=self._heart_beat, daemon=True)
         heartbeat_thread.start()
@@ -97,7 +99,11 @@ class LoadBalancer:
             else:
                 provider_id, provider = self._get_provider_round_robin()
 
-        val = provider.get()
+        free = self.req_sema.acquire(blocking=False)
+        val = provider.get() if free else "Too many parallel requests"
+        if free:
+            self.req_sema.release()
+
         with self._lock:
             if provider_id not in self.blacklist:
                 # The provider is now available again

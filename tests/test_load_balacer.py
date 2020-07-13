@@ -1,6 +1,7 @@
 import unittest
 from .context import loadBalancer
 from time import sleep
+import threading
 
 
 class LoadBalancerTest(unittest.TestCase):
@@ -137,6 +138,26 @@ class LoadBalancerTest(unittest.TestCase):
 
         self.assertEqual(lb.get(), black.get())
         self.assertEqual(lb.get(), white.get())
+
+    def test_cluster_capacity(self):
+        def thread_function(lb, output):
+            self.assertEqual(lb.get(), output)
+
+        lb = loadBalancer.LoadBalancer(3, False, 2, 2)
+        p1 = loadBalancer.Provider(delay=3)
+        p2 = loadBalancer.Provider(delay=3)
+        p3 = loadBalancer.Provider()
+
+        providers = [p1, p2, p3]
+
+        for p in providers[::-1]:
+            lb.add_provider(p)
+
+        outputs = [p1.get(), p2.get(), "Too many parallel requests"]
+        for p, out in zip(providers, outputs):
+            x = threading.Thread(target=thread_function, args=(lb, out,))
+            x.start()
+            sleep(0.5)
 
 
 if __name__ == "__main__":
