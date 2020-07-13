@@ -2,8 +2,8 @@ import unittest
 from .context import loadBalancer
 from time import sleep
 
-class LoadBalancerTest(unittest.TestCase):
 
+class LoadBalancerTest(unittest.TestCase):
     def test_max_providers(self):
         """
         Check that we don't accept more providers than our capacity
@@ -18,11 +18,9 @@ class LoadBalancerTest(unittest.TestCase):
             provider = loadBalancer.Provider()
             lb.add_provider(provider)
 
-
     def test_no_free_providers(self):
         lb = loadBalancer.LoadBalancer()
         self.assertEqual(lb.get(), "All providers are busy")
-
 
     def test_get_provider_random(self):
         """
@@ -48,7 +46,6 @@ class LoadBalancerTest(unittest.TestCase):
             provider = loadBalancer.Provider()
             lb.add_provider(provider)
 
-
     def test_round_robin_get(self):
         """
         Verify that the providers are invoked in the correct order
@@ -73,40 +70,42 @@ class LoadBalancerTest(unittest.TestCase):
         free provider list correctly
         """
         N = 10
-        #Round robin invocation to be able to predict which provider will be called
+        # Round robin invocation to be able to predict which provider will be called
         lb = loadBalancer.LoadBalancer(N, False)
         white = loadBalancer.Provider()
         black = loadBalancer.Provider()
-            
+
         lb.add_provider(white)
         lb.add_provider(black)
 
         lb.blacklist_provider(black.get())
 
-        #Check that we only use the white provider
+        # Check that we only use the white provider
         for _ in range(2):
             self.assertEqual(lb.get(), white.get())
 
         lb.blacklist_provider(white.get())
 
-        #No providers should be available
+        # No providers should be available
         self.assertEqual(lb.get(), "All providers are busy")
 
         lb.whitelist_provider(white.get())
         lb.whitelist_provider(black.get())
 
-        #Both providers should now be available
+        # Both providers should now be available
         self.assertEqual(lb.get(), black.get())
         self.assertEqual(lb.get(), white.get())
 
-
     def test_heartbeat(self):
+        """
+        Checks that the heartbeat thread excludes dead providers
+        """
         N = 10
-        #Round robin invocation to be able to predict which provider will be called
+        # Round robin invocation to be able to predict which provider will be called
         lb = loadBalancer.LoadBalancer(N, False, 2)
         white = loadBalancer.Provider()
         black = loadBalancer.Provider(False)
-            
+
         lb.add_provider(white)
         lb.add_provider(black)
 
@@ -115,7 +114,30 @@ class LoadBalancerTest(unittest.TestCase):
         for _ in range(2):
             self.assertEqual(lb.get(), white.get())
 
+    def test_heartbeat_restore(self):
+        """
+        Checks that providers that came back to life are added back
+        to the list of available providers
+        """
+        N = 10
+        # Round robin invocation to be able to predict which provider will be called
+        lb = loadBalancer.LoadBalancer(N, False, 2)
+        white = loadBalancer.Provider()
+        black = loadBalancer.Provider(False, False)
+
+        lb.add_provider(white)
+        lb.add_provider(black)
+
+        sleep(3)
+
+        for _ in range(2):
+            self.assertEqual(lb.get(), white.get())
+
+        sleep(4)
+
+        self.assertEqual(lb.get(), black.get())
+        self.assertEqual(lb.get(), white.get())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

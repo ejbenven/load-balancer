@@ -8,7 +8,6 @@ if __name__ == "__main__":
         provider = Provider()
         lb.add_provider(provider)
 
-
     for i in range(50):
         print(lb.get())
         if i % 10 == 0:
